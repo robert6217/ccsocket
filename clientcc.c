@@ -53,23 +53,25 @@ int main() {
                     send(clientSocket, exitfile, sizeof(exitfile), 0);
                     printf("\t-> [Client] %s\n", exitfile);
                     break;
+                } else if (strcmp(fn, ":exit") == 0) {
+                    printf("\t-> [Client] You are in \"FILE\" Mode, Please enter \":exitfile\" first!\n");
                 } else if ((ipList = fopen(fn, "r")) == NULL) {
-                    perror("\t-> [Client] Open File\n");
-                    exit(1);
-                }
-                fgets(ip, sizeof(ip), ipList);
-                while (feof(ipList) == 0) {
-                    ip[strlen(ip) - 1] = 0;
-                    if (strcmp(&ip[strlen(ip) - 1], ",") == 0) {
-                        ip[strlen(ip) - 1] = 0;
-                    }
-                    printf("\t-> [Client] ip: %s ", ip);
-                    send(clientSocket, ip, strlen(ip) + 1, 0);
-                    recv(clientSocket, buffer, sizeof(buffer), 0);
-                    printf("\t-> [Server] %s\n", buffer);
+                    printf("\t-> [Client] Error in Open File: %s\n", fn);
+                } else {
                     fgets(ip, sizeof(ip), ipList);
+                    while (feof(ipList) == 0) {
+                        ip[strlen(ip) - 1] = 0;
+                        if (strcmp(&ip[strlen(ip) - 1], ",") == 0) {
+                            ip[strlen(ip) - 1] = 0;
+                        }
+                        printf("\t-> [Client] ip: %s ", ip);
+                        send(clientSocket, ip, strlen(ip) + 1, 0);
+                        recv(clientSocket, buffer, sizeof(buffer), 0);
+                        printf("\t-> [Server] %s\n", buffer);
+                        fgets(ip, sizeof(ip), ipList);
+                    }
+                    fclose(ipList);
                 }
-                fclose(ipList);
             }
 
         } else {  //echo
