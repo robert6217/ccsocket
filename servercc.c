@@ -3,7 +3,6 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <regex.h>
-#include <semaphore.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +30,16 @@ bool ipreg(const char *ip, regex_t ipRegex) {
     }
 }
 
+void writeLog(const char *log) {
+    FILE *fp = fopen("test.txt", "a");
+    if (fp == NULL) {
+        perror("Error to fplog");
+        exit(1);
+    }
+    fwrite(log, 1, strlen(log), fp);
+    fclose(fp);
+}
+
 int main() {
     int sockfd = 0, newSocket = 0;
     socklen_t addr_size;
@@ -38,29 +47,20 @@ int main() {
     struct sockaddr_in serverAddr;
     struct sockaddr_in newAddr;
     char log[LOGBUFFER] = {'\0'};
-    FILE *fplog = fopen("test.txt", "a");
     pid_t childpid;
     regex_t ipRegex;
-    sem_t *sem;
-    sem = sem_open("pSem", O_CREAT | O_EXCL, 0644, 1);
     const char *IPpattern =
-        "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-"
+        "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-"
         "9][0-9]?)){3}$";
     int success = regcomp(&ipRegex, IPpattern, REG_EXTENDED | REG_ICASE);
     assert(success == 0);
-
-    if (fplog == NULL) {
-        perror("Error to fplog");
-        exit(1);
-    }
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("[Server] Error in connection.\n");
         exit(1);
     }
-    char *tmplog = "[Server] Socket is created.\n";
-    strncpy(log, tmplog, strlen(tmplog) + 1);
-    fwrite(log, 1, strlen(log) + 1, fplog);
+    strncpy(log, "[Server] Socket is created.\n", sizeof(log));
+    writeLog(log);
     printf("%s", log);
 
     memset(&serverAddr, '\0', sizeof(serverAddr));
@@ -74,13 +74,13 @@ int main() {
     }
     memset(log, '\0', sizeof(log));
     snprintf(log, sizeof(log), "[Server] Bind to port %d\n", PORT);
-    fwrite(log, 1, strlen(log) + 1, fplog);
+    writeLog(log);
     printf("%s", log);
 
     if (listen(sockfd, 10) == 0) {
         memset(log, '\0', sizeof(log));
         snprintf(log, sizeof(log), "[Server] Listen on port %s:%d\n", inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
-        fwrite(log, 1, strlen(log) + 1, fplog);
+        writeLog(log);
         printf("%s", log);
     } else {
         perror("[Server] Error in binding.\n");
@@ -120,7 +120,10 @@ int main() {
                     }
                     memset(buffer, '\0', sizeof(buffer));
                 } else {
-                    printf("[Client] %s\n", buffer);
+                    memset(log, '\0', sizeof(log));
+                    snprintf(log, sizeof(log), "[Client] %s\n", buffer);
+                    writeLog(log);
+                    printf("%s", log);
                     send(newSocket, buffer, strlen(buffer) + 1, 0);
                     memset(buffer, '\0', sizeof(buffer));
                 }
@@ -128,7 +131,6 @@ int main() {
         }
     }
     regfree(&ipRegex);
-    fclose(fplog);
     close(newSocket);
 
     return 0;
