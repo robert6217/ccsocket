@@ -43,7 +43,9 @@ int main() {
     regex_t ipRegex;
     sem_t *sem;
     sem = sem_open("pSem", O_CREAT | O_EXCL, 0644, 1);
-    const char *IPpattern = "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$";
+    const char *IPpattern =
+        "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-"
+        "9][0-9]?)){3}$";
     int success = regcomp(&ipRegex, IPpattern, REG_EXTENDED | REG_ICASE);
     assert(success == 0);
 
@@ -90,7 +92,6 @@ int main() {
             exit(1);
         }
         printf("[Server] Connection accepted from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
-
         if ((childpid = fork()) == 0) {
             close(sockfd);
 
@@ -117,7 +118,6 @@ int main() {
                             memset(buffer, '\0', sizeof(buffer));
                         }
                     }
-                    regfree(&ipRegex);
                     memset(buffer, '\0', sizeof(buffer));
                 } else {
                     printf("[Client] %s\n", buffer);
@@ -127,6 +127,7 @@ int main() {
             }
         }
     }
+    regfree(&ipRegex);
     fclose(fplog);
     close(newSocket);
 
